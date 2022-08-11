@@ -6,6 +6,7 @@ resource "aws_instance" "myawsserver" {
     Name = "vel-aws-ec2-instance-v4"
     Env = "Dev"
     role="developer"
+     type="test"
   }
 }
 
