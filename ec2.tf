@@ -5,6 +5,7 @@ resource "aws_instance" "myawsserver" {
   tags = {
     Name = "vel-aws-ec2-instance-v4"
     Env = "Dev"
+    role="developer"
   }
 }
 
