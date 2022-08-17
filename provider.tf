@@ -2,7 +2,7 @@ provider "aws" {
   region = "us-east-2"
 }
 
-terraform {
+/* terraform {
   cloud {
     organization = "vel-hexaware"
 
@@ -10,4 +10,4 @@ terraform {
       name = "vel-cli-workspace"
     }
   }
-}
+} */
