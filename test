@@ -1,0 +1,119 @@
+{
+	"Comment": "Using Maps state in Inline mode",
+	"StartAt": "Pass",
+	"States": {
+		"Pass": {
+			"Type": "Pass",
+			"Next": "Map demo",
+			"Result": {
+				"foo": "bar",
+				"colors": [
+					"red",
+					"green",
+					"blue",
+					"yellow",
+					"white"
+				]
+			}
+		},
+		"Map demo": {
+			"Type": "Map",
+			"ItemsPath": "$.colors",
+			"ItemProcessor": {
+				"ProcessorConfig": {
+					"Mode": "INLINE"
+				},
+				"StartAt": "ECS RunTask",
+				"States": {
+					"ECS RunTask": {
+						"Type": "Task",
+						"Resource": "arn:aws:states:::ecs:runTask.sync",
+						"Parameters": {
+							"LaunchType": "FARGATE",
+							"Cluster": "arn:aws:ecs:us-east-1:782698772065:cluster/python-ecs",
+							"TaskDefinition": "arn:aws:ecs:us-east-1:782698772065:task-definition/python-ecs:2",
+							"NetworkConfiguration": {
+								"AwsvpcConfiguration": {
+									"AssignPublicIp": "ENABLED",
+									"SecurityGroups": [
+										"sg-068bee7274856b8a6"
+									],
+									"Subnets": [
+										"subnet-59639278"
+									]
+								}
+							},
+							"Overrides": {
+								"ContainerOverrides": [
+									{
+										"Name": "python-ecs",
+										"Environment": [
+											{
+												"Name": "START_DATE",
+												"Value": "2024-10-01"
+											},
+											{
+												"Name": "END_DATE",
+												"Value": "2024-10-02"
+											},
+											{
+												"Name": "TABLE_NAME",
+												"Value": "TABLE02"
+											},
+											{
+												"Name": "GRPNAME",
+												"Value.$": "$"
+											}
+										]
+									}
+								]
+							}
+						},
+						"Catch": [
+							{
+								"ErrorEquals": [
+									"States.ALL"
+								],
+								"ResultPath": "$.errorDetails",
+								"Next": "FailureAccumulator"
+							}
+						],
+						"End": true
+					},
+					"FailureAccumulator": {
+						"Type": "Pass",
+						"ResultPath": "$.failures",
+						"Next": "EndIteration"
+					},
+					"EndIteration": {
+						"Type": "Succeed"
+					}
+				}
+			},
+			"Next": "CheckFailures"
+		},
+		"CheckFailures": {
+			"Type": "Choice",
+			"Choices": [
+				{
+					"Variable": "$.failures",
+					"IsPresent": true,
+					"Next": "SendFailureNotification"
+				}
+			],
+			"Default": "Success"
+		},
+		"SendFailureNotification": {
+			"Type": "Task",
+			"Resource": "arn:aws:states:::sns:publish",
+			"Parameters": {
+				"Message": "Some ECS tasks in the Map iteration have failed. Here are the details: $.failures",
+				"TopicArn": "arn:aws:sns:REGION:ACCOUNT_ID:YourTopicName"
+			},
+			"End": true
+		},
+		"Success": {
+			"Type": "Succeed"
+		}
+	}
+}
